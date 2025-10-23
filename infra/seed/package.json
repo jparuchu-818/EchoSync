@@ -1,0 +1,11 @@
+{
+  "name": "echo-plus-seed",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.632.0"
+  },
+  "scripts": {
+    "seed": "node seedAll.mjs"
+  }
+}

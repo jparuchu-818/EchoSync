@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Echo+ — The Broista's Superpower (OrderSync, RelationshipSync, SmartWhisper, MemoryCapture)
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 20
+    MemorySize: 256
+    Architectures: [x86_64]
+    Handler: index.handler
+
+Resources:
+  CustomerProfiles:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: echo_customers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: customer_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customer_id
+          KeyType: HASH
+
+  MemoryNotes:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: echo_memory
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: note_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: note_id
+          KeyType: HASH
+
+  LoyaltyData:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: echo_loyalty
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: customer_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: customer_id
+          KeyType: HASH
+
+  MenuDatabase:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: echo_menu
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: name
+          AttributeType: S
+      KeySchema:
+        - AttributeName: name
+          KeyType: HASH
+
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: dev
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: ['*']
+        AllowHeaders: ['*']
+
+  OrderSyncFn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+    Properties:
+      CodeUri: lambdas/orderSync
+      Description: OrderSync — parse free text into a POS-ready order (mock Comprehend/Transcribe)
+      Environment:
+        Variables:
+          MENU_TABLE: !Ref MenuDatabase
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref MenuDatabase
+      Events:
+        ApiOrder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /orderSync
+            Method: POST
+
+  RelationshipSyncFn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+    Properties:
+      CodeUri: lambdas/relationshipSync
+      Description: RelationshipSync — fetch/compose customer context card
+      Environment:
+        Variables:
+          CUSTOMER_TABLE: !Ref CustomerProfiles
+          MEMORY_TABLE: !Ref MemoryNotes
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref CustomerProfiles
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MemoryNotes
+      Events:
+        ApiRel:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /relationshipSync
+            Method: POST
+
+  SmartWhisperFn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+    Properties:
+      CodeUri: lambdas/smartWhisper
+      Description: SmartWhisper — prioritize and emit a single cue
+      Environment:
+        Variables:
+          LOYALTY_TABLE: !Ref LoyaltyData
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref LoyaltyData
+      Events:
+        ApiWhisper:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /smartWhisper
+            Method: POST
+
+  MemoryCaptureFn:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        Minify: true
+        Target: 'es2020'
+    Properties:
+      CodeUri: lambdas/memoryCapture
+      Description: MemoryCapture — store post-interaction notes
+      Environment:
+        Variables:
+          MEMORY_TABLE: !Ref MemoryNotes
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MemoryNotes
+      Events:
+        ApiMemory:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref Api
+            Path: /memoryCapture
+            Method: POST
+
+Outputs:
+  ApiBase:
+    Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/dev
+  CustomersTable:
+    Value: !Ref CustomerProfiles
+  MemoryTable:
+    Value: !Ref MemoryNotes
+  LoyaltyTable:
+    Value: !Ref LoyaltyData
+  MenuTable:
+    Value: !Ref MenuDatabase
