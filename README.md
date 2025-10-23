@@ -44,8 +44,6 @@ Response → Frontend UI
 ↓
 Dutch Bros KDS (API Integration Next)
 
-yaml
-Copy code
 
 ---
 
@@ -69,9 +67,6 @@ Create `/web/.env.local`:
 VITE_API_BASE=<your-AWS-API-URL>
 Example:
 
-bash
-Copy code
-VITE_API_BASE=https://wtqjry80si.execute-api.us-west-2.amazonaws.com/dev
 2️⃣ Run Frontend
 bash
 Copy code
@@ -99,7 +94,7 @@ Copy code
 }
 👥 Team Roles
 Member	Role	Focus
-Jishnu (Lead)	AWS Infra + Integration	Maintain backend, manage PRs, connect to Dutch Bros API
+Jishnu -	AWS Infra + Integration	Maintain backend, manage PRs, connect to Dutch Bros API
 Teammate 1	Frontend UI	Dashboard + Order History
 Teammate 2	Voice Module	Mic input (Web Speech API)
 Teammate 3	Memory & Loyalty	/memoryCapture and profile recall
