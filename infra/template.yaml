@@ -11,6 +11,9 @@ Globals:
     Handler: index.handler
 
 Resources:
+  # ===============================
+  # DynamoDB Tables
+  # ===============================
   CustomerProfiles:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -59,15 +62,27 @@ Resources:
         - AttributeName: name
           KeyType: HASH
 
+  # ===============================
+  # API Gateway (CORS Enabled)
+  # ===============================
   Api:
     Type: AWS::Serverless::HttpApi
     Properties:
       StageName: dev
       CorsConfiguration:
-        AllowOrigins: ['*']
-        AllowMethods: ['*']
-        AllowHeaders: ['*']
+        AllowOrigins:
+          - "http://localhost:5173"
+          - "*"
+        AllowMethods:
+          - GET
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - "*"
 
+  # ===============================
+  # Lambda: OrderSync
+  # ===============================
   OrderSyncFn:
     Type: AWS::Serverless::Function
     Metadata:
@@ -89,9 +104,12 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref Api
-            Path: /orderSync
+            Path: /order
             Method: POST
 
+  # ===============================
+  # Lambda: RelationshipSync
+  # ===============================
   RelationshipSyncFn:
     Type: AWS::Serverless::Function
     Metadata:
@@ -116,9 +134,12 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref Api
-            Path: /relationshipSync
+            Path: /relationship
             Method: POST
 
+  # ===============================
+  # Lambda: SmartWhisper
+  # ===============================
   SmartWhisperFn:
     Type: AWS::Serverless::Function
     Metadata:
@@ -140,9 +161,12 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref Api
-            Path: /smartWhisper
+            Path: /whisper
             Method: POST
 
+  # ===============================
+  # Lambda: MemoryCapture
+  # ===============================
   MemoryCaptureFn:
     Type: AWS::Serverless::Function
     Metadata:
@@ -164,9 +188,12 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref Api
-            Path: /memoryCapture
+            Path: /memory
             Method: POST
 
+# ===============================
+# Outputs
+# ===============================
 Outputs:
   ApiBase:
     Value: !Sub https://${Api}.execute-api.${AWS::Region}.amazonaws.com/dev
