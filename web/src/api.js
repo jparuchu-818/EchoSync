@@ -1,21 +1,33 @@
-import axios from 'axios'
+import axios from "axios";
 
-// Set this in your Amplify env or local .env file
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3000/dev';
+export const API_BASE =
+  import.meta.env.VITE_API_BASE ||
+  "https://wtqjry80si.execute-api.us-west-2.amazonaws.com/dev";
 
-export async function orderSync(text){
-  const { data } = await axios.post(`${API_BASE}/orderSync`, { text });
-  return data;
-}
-export async function relationshipSync(customer_id){
-  const { data } = await axios.post(`${API_BASE}/relationshipSync`, { customer_id });
-  return data;
-}
-export async function smartWhisper(customer_id, signals){
-  const { data } = await axios.post(`${API_BASE}/smartWhisper`, { customer_id, signals });
-  return data;
-}
-export async function memoryCapture(payload){
-  const { data } = await axios.post(`${API_BASE}/memoryCapture`, payload);
-  return data;
+export async function orderSync(text) {
+  console.log("🚀 API_BASE =", API_BASE);
+  console.log("📦 Sending payload:", { text });
+
+  try {
+    const response = await axios.post(
+      `${API_BASE}/order`,
+      { text },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("✅ Lambda response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("❌ OrderSync error:", error);
+    if (error.response) {
+      console.error("🧱 Lambda responded with:", error.response.status, error.response.data);
+    } else {
+      console.error("⚠️ Network error:", error.message);
+    }
+    throw error;
+  }
 }

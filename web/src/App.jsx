@@ -1,86 +1,101 @@
-import { useState } from 'react'
-import './styles.css'
-import { orderSync, relationshipSync, smartWhisper, memoryCapture } from './api'
-import CustomerCard from './components/CustomerCard.jsx'
-import OrderBuilder from './components/OrderBuilder.jsx'
-import WhisperBox from './components/WhisperBox.jsx'
-import MemoryCapture from './components/MemoryCapture.jsx'
+import React, { useState } from "react";
+import { orderSync } from "./api";
 
-export default function App(){
-  const [customerId, setCustomerId] = useState('cust_sarah')
-  const [text, setText] = useState('can i get a medium iced golden eagle with oat milk and light ice')
-  const [order, setOrder] = useState(null)
-  const [card, setCard] = useState(null)
-  const [whisper, setWhisper] = useState(null)
-  const [busy, setBusy] = useState(false)
+export default function App() {
+  const [text, setText] = useState("");
+  const [response, setResponse] = useState(null);
 
-  async function fetchCard(){
-    setBusy(true)
-    try{
-      const r = await relationshipSync(customerId)
-      setCard(r.card)
-    } finally { setBusy(false) }
-  }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    console.clear();
+    console.log("🟢 handleSubmit triggered");
+    console.log("📤 Sending to backend:", text);
 
-  async function buildOrder(){
-    setBusy(true)
-    try{
-      const o = await orderSync(text)
-      setOrder(o)
-    } finally { setBusy(false) }
-  }
+    try {
+      const res = await orderSync(text);
+      console.log("✅ Backend response received:", res);
+      setResponse(res);
+    } catch (err) {
+      console.error("❌ Error occurred while calling backend:", err);
 
-  async function triggerWhisper(){
-    setBusy(true)
-    try{
-      const w = await smartWhisper(customerId, { hesitation: false, days_since_last: 15 })
-      setWhisper(w.whisper)
-    } finally { setBusy(false) }
-  }
+      if (err.response) {
+        console.error("🧱 Backend returned:", err.response.status, err.response.data);
+      } else {
+        console.error("⚠️ Network or CORS error:", err.message);
+      }
 
-  async function saveNote(note){
-    setBusy(true)
-    try{
-      await memoryCapture({ customer_id: customerId, broista_id: 'broista_demo', note_text: note, tags: ['demo'], priority: 'normal' })
-      alert('Saved!')
-    } finally { setBusy(false) }
-  }
+      alert("Request failed! Check console for details.");
+    }
+  };
 
   return (
-    <div className="container">
-      <h1 className="h1">Echo+ — The Broista's Superpower</h1>
-      <div className="grid">
-        <div className="card">
-          <div className="kicker">RelationshipSync</div>
-          <div className="row" style={{marginTop:8}}>
-            <input className="input" value={customerId} onChange={e=>setCustomerId(e.target.value)} />
-            <button className="btn" onClick={fetchCard} disabled={busy}>Load Customer</button>
-          </div>
-          {card && <CustomerCard card={card} />}
-        </div>
+    <div
+      style={{
+        textAlign: "center",
+        marginTop: "10%",
+        color: "white",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <h1>☕ Echo+ Voice Order Test</h1>
 
-        <div className="card">
-          <div className="kicker">OrderSync</div>
-          <div className="row" style={{marginTop:8}}>
-            <input className="input" value={text} onChange={e=>setText(e.target.value)} />
-            <button className="btn" onClick={buildOrder} disabled={busy}>Build Order</button>
-          </div>
-          {order && <OrderBuilder order={order} />}
-        </div>
+      <p>
+        Backend:{" "}
+        <span style={{ color: "#6cf" }}>
+          {import.meta.env.VITE_API_BASE ||
+            "http://localhost:3000/dev"}
+        </span>
+      </p>
 
-        <div className="card">
-          <div className="kicker">SmartWhisper</div>
-          <div className="row" style={{marginTop:8}}>
-            <button className="btn" onClick={triggerWhisper} disabled={busy}>Simulate App Scan</button>
-          </div>
-          {whisper && <WhisperBox whisper={whisper} />}
-        </div>
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          placeholder="Try: medium iced Golden Eagle"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          style={{
+            width: "400px",
+            padding: "12px",
+            borderRadius: "8px",
+            border: "1px solid #444",
+            fontSize: "16px",
+          }}
+        />
 
-        <div className="card">
-          <div className="kicker">Memory Capture</div>
-          <MemoryCapture onSave={saveNote} />
+        <br />
+
+        <button
+          type="submit"
+          style={{
+            marginTop: "15px",
+            padding: "10px 22px",
+            borderRadius: "8px",
+            border: "none",
+            backgroundColor: "#ddd",
+            cursor: "pointer",
+            fontWeight: "bold",
+          }}
+        >
+          Send Order
+        </button>
+      </form>
+
+      {response && (
+        <div
+          style={{
+            backgroundColor: "#111",
+            color: "#0f0",
+            margin: "30px auto",
+            padding: "20px",
+            width: "60%",
+            borderRadius: "10px",
+            textAlign: "left",
+          }}
+        >
+          <h3>✅ Response:</h3>
+          <pre>{JSON.stringify(response, null, 2)}</pre>
         </div>
-      </div>
+      )}
     </div>
-  )
+  );
 }
